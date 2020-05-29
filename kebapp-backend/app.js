@@ -2,15 +2,18 @@
 const express = require('express');
 const mongoose = require('mongoose');
 
+const cfg = require('./config');
 const app = express();
+const port = cfg.port;
+const mongoIP = cfg.mongoIP;
 
-app.listen(3000, ()=>{
+app.listen(port, ()=>{
     connectToDB();
-    console.log('Listening on http://localhost:3000/');
+    console.log('Listening on ' + port);
 });
 
 function connectToDB(){
-    mongoose.connect('mongodb://localhost/kebapp',{useUnifiedTopology: true, useNewUrlParser: true},()=>{
+    mongoose.connect(mongoIP, {useUnifiedTopology: true, useNewUrlParser: true},()=>{
         console.log("connected to db");
     });
 }
