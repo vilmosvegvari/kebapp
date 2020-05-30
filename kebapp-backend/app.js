@@ -9,6 +9,7 @@ const port = cfg.port;
 const mongoIP = cfg.mongoIP;
 const mapboxApiKey = cfg.mapboxApiKey;
 const priceSchema = require('./models/price.js');
+const mapboxPlacesUrl = "https://api.mapbox.com/geocoding/v5/mapbox.places/";
 
 app.listen(port, ()=>{
     connectToDB();
@@ -47,21 +48,51 @@ app.get('/price', (req,res)=>{
 })
 
 app.get('/restaurant', (req,res)=>{
-    //req includes the bbox coordinates
-    //eg: 
-    /*
-        {
-            "left corner": {
-                "x": 77.083056,
-                "y": 38.908611
-            },
-            "right corner": {
-                "x": -76.997778,
-                "y": 38.959167
+    //get coordinates from req
+    //get zoom from req
+    //calculate the box
+    //response json:
+    //loop the features remove unnecessary 
+    //remove query before
+    let lx = -77.083056;
+    let ly = 38.908611;
+    let rx = -76.997778;
+    let ry = 38.959167;
+    var url = mapboxPlacesUrl + "starbucks.json?bbox=" + lx + "," + ly + "," + rx + "," + ry +"&access_token=" + mapboxApiKey;
+
+    https.get(url, (response)=>{
+        let results="";
+        response.setEncoding('utf-8');    
+        response.on('data', (bodyChunk) => {
+            results+=bodyChunk;
+        });
+        
+        response.on('end', ()=>{
+            let json = JSON.parse(results)
+            var geometryArray = [];
+
+            json.features.forEach(element => {
+                geometryArray.push({
+                    type: "Feature",
+                    geometry:{
+                        type: element.geometry.type,
+                        coordinates: [
+                            element.geometry.coordinates[0],
+                            element.geometry.coordinates[1]
+                        ]
+                    }
+                });
+            });
+
+            let resJson = {
+                type : "FeatureCollection",
+                features : [
+                    geometryArray
+                ]
             }
-        }
-    */
-   //res sends back the result from the query using mapbox places
-   //query from https://api.mapbox.com/geocoding/v5/mapbox.places/ and send the data to the frontend
-   //https query eg: https://api.mapbox.com/geocoding/v5/mapbox.places/kebab.json?bbox=-77.083056,38.908611,-76.997778,38.959167&access_token=mapboxApiKey
+            console.log(resJson);
+            res.setHeader('Content-Type', 'application/json');
+            res.json(resJson);
+        })
+    });
 })
