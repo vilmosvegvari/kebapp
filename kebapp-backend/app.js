@@ -8,6 +8,7 @@ const app = express();
 const port = cfg.port;
 const mongoIP = cfg.mongoIP;
 const mapboxApiKey = cfg.mapboxApiKey;
+const priceSchema = require('./models/price.js');
 
 app.listen(port, ()=>{
     connectToDB();
@@ -27,10 +28,16 @@ app.get('/', (req,res)=>{
 })
 
 app.post('/rate', (req,res)=>{
-    //req inculedes the unique restaurant name, the price and the rating type: either positive or negative
+    //req inculedes the location, the price and the rating type: either positive or negative
     //res sends back the new rating for the price
     //update the row in the collection
-    //??could go on the /price endpoint with post
+})
+
+app.post('/price', (req,res)=>{
+    //req includes the location coordinates, the new price
+    //res sends back the saved row
+    //insert a new row to prices
+    //if the row exist, add one positive rating
 })
 
 app.get('/price', (req,res)=>{
