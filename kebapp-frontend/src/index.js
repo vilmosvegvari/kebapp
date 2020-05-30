@@ -52,7 +52,9 @@ class Application extends React.Component {
       });
 
       fetch(process.env.REACT_APP_BACKEND_URL + "restaurant", jsonPost).then(
+        response => response.json()).then(
         (response) => {
+          console.log(response);
           if (response) this.addLayerwithPoints(response);
         }
       );
@@ -60,6 +62,7 @@ class Application extends React.Component {
   }
 
   addLayerwithPoints(source) {
+    console.log(source);
     if (map.getLayer("kebabLayer")) map.removeLayer("kebabLayer");
     if (map.getSource("kebabs")) map.removeSource("kebabs");
     map.addSource("kebabs", source);
@@ -69,7 +72,7 @@ class Application extends React.Component {
       source: "kebabs",
       layout: {
         "icon-image": "kebab",
-        "icon-size": 0.05,
+        "icon-size": 0.7,
       },
     });
   }
