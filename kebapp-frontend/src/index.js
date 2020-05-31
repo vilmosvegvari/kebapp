@@ -1,10 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import mapboxgl from "mapbox-gl";
+import mapboxgl, { Popup } from "mapbox-gl";
 
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
 let map;
+const popup = new Popup({ closeOnMove: true }).setHTML("<div>Loading...</div>");
 
 let jsonPost = {
   method: "POST",
@@ -17,7 +18,7 @@ class Application extends React.Component {
     this.state = {
       lng: 16.83519,
       lat: 47.556339,
-      zoom: 13,
+      zoom: 15,
     };
   }
 
@@ -29,6 +30,16 @@ class Application extends React.Component {
       zoom: this.state.zoom,
     });
 
+    if ("geolocation" in navigator){
+      navigator.geolocation.getCurrentPosition((position) =>{
+        this.setState({
+          lng: position.coords.longitude,
+          lat: position.coords.latitude,
+        });
+        map.setCenter([this.state.lng,this.state.lat]);
+      });
+    }
+
     map.on("load", () => {
       map.loadImage(
         "https://image.flaticon.com/icons/png/512/541/541769.png",
@@ -37,6 +48,36 @@ class Application extends React.Component {
           map.addImage("kebab", image);
         }
       );
+      
+    });
+
+    map.on("click", "kebabLayer", function (e) {
+      let coordinates = e.features[0].geometry.coordinates.slice();
+      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        // correcting for zoom
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      }
+
+      jsonPost.body = JSON.stringify({
+        lng: coordinates[0],
+        lat: coordinates[1],
+      });
+
+      popup.setHTML("<div> Loading </div>");
+
+      fetch(
+        process.env.REACT_APP_BACKEND_URL + "restaurant/info",
+        jsonPost
+      )
+        .then((response) => response.json())
+        .then((response) => {
+          if (response)
+            popup.setHTML(this.createHTML(JSON.stringify(response)));
+        });
+
+      popup.remove();
+      popup.setLngLat(coordinates).addTo(map);
+
     });
 
     map.on("moveend", () => {
@@ -51,18 +92,20 @@ class Application extends React.Component {
         zoom: this.state.zoom,
       });
 
-      fetch(process.env.REACT_APP_BACKEND_URL + "restaurant", jsonPost).then(
-        response => response.json()).then(
-        (response) => {
-          console.log(response);
+      fetch(process.env.REACT_APP_BACKEND_URL + "restaurant", jsonPost)
+        .then((response) => response.json())
+        .then((response) => {
           if (response) this.addLayerwithPoints(response);
-        }
-      );
+        });
     });
   }
 
+  createHTML(input) {
+    //TODO
+    return <div>{input}</div>;
+  }
+
   addLayerwithPoints(source) {
-    console.log(source);
     if (map.getLayer("kebabLayer")) map.removeLayer("kebabLayer");
     if (map.getSource("kebabs")) map.removeSource("kebabs");
     map.addSource("kebabs", source);
@@ -72,7 +115,7 @@ class Application extends React.Component {
       source: "kebabs",
       layout: {
         "icon-image": "kebab",
-        "icon-size": 0.7,
+        "icon-size": 0.05,
       },
     });
   }
