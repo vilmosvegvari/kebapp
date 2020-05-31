@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const https = require("https");
 const bodyparser = require("body-parser");
+const async = require("async");
 
 const cors = require("cors");
 
@@ -10,7 +11,8 @@ const app = express();
 const port = cfg.port;
 const mongoIP = cfg.mongoIP;
 const mapboxApiKey = cfg.mapboxApiKey;
-const priceSchema = require("./models/price.js");
+const Price = require("./models/price.js");
+const Restaurant = require("./models/restaurant.js")
 const mapboxPlacesUrl = "https://api.mapbox.com/geocoding/v5/mapbox.places/";
 
 app.use(cors());
@@ -106,13 +108,78 @@ app.post("/restaurant", (req, res) => {
             features: geometryArray,
           },
         };
-        res.setHeader("Content-Type", "application/json");
         res.json(resJson);
       });
     });
   }
 });
 
-app.post('/restaurant/info', (req, res) => {
+app.post('/restaurant/info', async (req, res) => {
+  let loc = {
+    longitude: req.body.lng,
+    latitude: req.body.lat
+  }
 
-})
+  let currentRestaurant = await Restaurant.findOne({
+    location: loc
+  });
+
+  if (currentRestaurant != null) {
+    Price.find({ restaurant: currentRestaurant.name }).exec((err, results) => {
+      if (err != null) {
+        console.log(err);
+      }
+
+      var prices = [];
+      results.forEach((element) => {
+        prices.push({
+          food: element.food,
+          price: element.price,
+          rating: element.rating
+        });
+      });
+
+      res.json({
+        name: currentRestaurant.name,
+        prices: prices
+      });
+    });
+  }
+  else {
+    var url =
+      mapboxPlacesUrl +
+      loc.longitude +
+      "," +
+      loc.latitude +
+      ".json?access_token=" +
+      mapboxApiKey;
+
+    https.get(url, (response) => {
+      let results = "";
+      response.setEncoding("utf-8");
+      response.on("data", (bodyChunk) => {
+        results += bodyChunk;
+      });
+
+      response.on("end", () => {
+        let restaurantName = JSON.parse(results).features[0].place_name;
+
+        let restaurant = new Restaurant({
+          name: restaurantName,
+          location: loc
+        });
+
+        restaurant.save((err) => {
+          if (err != null) {
+            console.log(err);
+          }
+        })
+
+        res.json({
+          name: restaurantName,
+          prices: []
+        })
+      });
+    });
+  }
+});

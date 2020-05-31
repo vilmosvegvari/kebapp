@@ -3,10 +3,8 @@ const mongoose = require('mongoose');
 const PriceSchema=mongoose.Schema({
     price: Number,
     rating: Number,
-    location :{
-        longitude:Number,
-        latitude:Number
-    }
+    restaurant: String,
+    food: String
 });
 
-module.exports=mongoose.model('Prices',PriceSchema);
+module.exports=mongoose.model('Price',PriceSchema);
