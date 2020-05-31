@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const https = require("https");
+const bodyparser = require("body-parser");
 
 const cors = require("cors");
 
@@ -13,6 +14,7 @@ const priceSchema = require("./models/price.js");
 const mapboxPlacesUrl = "https://api.mapbox.com/geocoding/v5/mapbox.places/";
 
 app.use(cors());
+app.use(bodyparser.json());
 
 app.listen(port, () => {
   connectToDB();
@@ -55,63 +57,62 @@ app.get("/price", (req, res) => {
 });
 
 app.post("/restaurant", (req, res) => {
-  //get coordinates from req
-  //get zoom from req
-  //calculate the box
-  //response json:
-  //loop the features remove unnecessary
-  //remove query before
-  let lx = -77.083056;
-  let ly = 38.908611;
-  let rx = -76.997778;
-  let ry = 38.959167;
-  var url =
-    mapboxPlacesUrl +
-    "starbucks.json?bbox=" +
-    lx +
-    "," +
-    ly +
-    "," +
-    rx +
-    "," +
-    ry +
-    "&access_token=" +
-    mapboxApiKey;
+  if (req.body.zoom < 13) {
+    res.json(null);
+  } else {
+    console.log("new req------------------------------------");
+    let lng = +req.body.lng;
+    let lat = +req.body.lat;
+    var url =
+      mapboxPlacesUrl +
+      "fast_food.json?proximity=" +
+      lng +
+      "," +
+      lat +
+      "&access_token=" +
+      mapboxApiKey;
 
-  https.get(url, (response) => {
-    let results = "";
-    response.setEncoding("utf-8");
-    response.on("data", (bodyChunk) => {
-      results += bodyChunk;
-    });
-
-    response.on("end", () => {
-      let json = JSON.parse(results);
-      var geometryArray = [];
-
-      json.features.forEach((element) => {
-        geometryArray.push({
-          type: "Feature",
-          geometry: {
-            type: element.geometry.type,
-            coordinates: [
-              element.geometry.coordinates[0],
-              element.geometry.coordinates[1],
-            ],
-          }
-        });
+    https.get(url, (response) => {
+      let results = "";
+      response.setEncoding("utf-8");
+      response.on("data", (bodyChunk) => {
+        results += bodyChunk;
       });
 
-      let resJson = {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: geometryArray,
-        },
-      };
-      console.log(resJson);
-      res.setHeader("Content-Type", "application/json");
-      res.json(resJson);
+      console.log(req.body);
+
+      response.on("end", () => {
+        let json = JSON.parse(results);
+        var geometryArray = [];
+
+        json.features.forEach((element) => {
+          console.log(element.place_name);
+          geometryArray.push({
+            type: "Feature",
+            geometry: {
+              type: element.geometry.type,
+              coordinates: [
+                element.geometry.coordinates[0],
+                element.geometry.coordinates[1],
+              ],
+            }
+          });
+        });
+
+        let resJson = {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: geometryArray,
+          },
+        };
+        res.setHeader("Content-Type", "application/json");
+        res.json(resJson);
+      });
     });
-  });
+  }
 });
+
+app.post('/restaurant/info', (req, res) => {
+
+})
