@@ -62,17 +62,9 @@ app.post("/restaurant", (req, res) => {
   if (req.body.zoom < 13) {
     res.json(null);
   } else {
-    console.log("new req------------------------------------");
-    let lng = +req.body.lng;
-    let lat = +req.body.lat;
-    var url =
-      mapboxPlacesUrl +
-      "fast_food.json?proximity=" +
-      lng +
-      "," +
-      lat +
-      "&access_token=" +
-      mapboxApiKey;
+    let lng = req.body.lng;
+    let lat = req.body.lat;
+    var url = mapboxPlacesUrl + "fast_food.json?proximity=" + lng + "," + lat + "&access_token=" + mapboxApiKey;
 
     https.get(url, (response) => {
       let results = "";
@@ -81,34 +73,31 @@ app.post("/restaurant", (req, res) => {
         results += bodyChunk;
       });
 
-      console.log(req.body);
-
       response.on("end", () => {
         let json = JSON.parse(results);
-        var geometryArray = [];
+        var locationsArray = [];
 
-        json.features.forEach((element) => {
-          console.log(element.place_name);
-          geometryArray.push({
+        json.features.forEach((doc) => {
+          console.log(doc.place_name);
+          locationsArray.push({
             type: "Feature",
             geometry: {
-              type: element.geometry.type,
+              type: doc.geometry.type,
               coordinates: [
-                element.geometry.coordinates[0],
-                element.geometry.coordinates[1],
+                doc.geometry.coordinates[0],
+                doc.geometry.coordinates[1],
               ],
             }
           });
         });
 
-        let resJson = {
+        res.json({
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: geometryArray,
-          },
-        };
-        res.json(resJson);
+            features: locationsArray,
+          }
+        });
       });
     });
   }
@@ -131,11 +120,11 @@ app.post('/restaurant/info', async (req, res) => {
       }
 
       var prices = [];
-      results.forEach((element) => {
+      results.forEach((doc) => {
         prices.push({
-          food: element.food,
-          price: element.price,
-          rating: element.rating
+          food: doc.food,
+          price: doc.price,
+          rating: doc.rating
         });
       });
 
@@ -146,13 +135,7 @@ app.post('/restaurant/info', async (req, res) => {
     });
   }
   else {
-    var url =
-      mapboxPlacesUrl +
-      loc.longitude +
-      "," +
-      loc.latitude +
-      ".json?access_token=" +
-      mapboxApiKey;
+    var url = mapboxPlacesUrl + loc.longitude + "," + loc.latitude + ".json?access_token=" + mapboxApiKey;
 
     https.get(url, (response) => {
       let results = "";
@@ -172,6 +155,8 @@ app.post('/restaurant/info', async (req, res) => {
         restaurant.save((err) => {
           if (err != null) {
             console.log(err);
+          } else {
+            console.log(restaurantName + " is saved.")
           }
         })
 
