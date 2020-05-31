@@ -5,7 +5,7 @@ import mapboxgl, { Popup } from "mapbox-gl";
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
 let map;
-const popup = new Popup({ closeOnMove: true }).setHTML("<div>Loading...</div>");
+const popup = new Popup({ closeOnMove: true });
 
 let jsonPost = {
   method: "POST",
@@ -30,13 +30,14 @@ class Application extends React.Component {
       zoom: this.state.zoom,
     });
 
-    if ("geolocation" in navigator){
-      navigator.geolocation.getCurrentPosition((position) =>{
-        this.setState({
+    let that = this;
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(function (position) {
+        that.setState({
           lng: position.coords.longitude,
           lat: position.coords.latitude,
         });
-        map.setCenter([this.state.lng,this.state.lat]);
       });
     }
 
@@ -48,7 +49,7 @@ class Application extends React.Component {
           map.addImage("kebab", image);
         }
       );
-      
+      map.setCenter([this.state.lng, this.state.lat]);
     });
 
     map.on("click", "kebabLayer", function (e) {
@@ -64,11 +65,9 @@ class Application extends React.Component {
       });
 
       popup.setHTML("<div> Loading </div>");
+      popup.setLngLat(coordinates);
 
-      fetch(
-        process.env.REACT_APP_BACKEND_URL + "restaurant/info",
-        jsonPost
-      )
+      fetch(process.env.REACT_APP_BACKEND_URL + "restaurant/info", jsonPost)
         .then((response) => response.json())
         .then((response) => {
           if (response)
@@ -76,8 +75,7 @@ class Application extends React.Component {
         });
 
       popup.remove();
-      popup.setLngLat(coordinates).addTo(map);
-
+      popup.addTo(map);
     });
 
     map.on("moveend", () => {
@@ -96,7 +94,7 @@ class Application extends React.Component {
         .then((response) => response.json())
         .then((response) => {
           if (response) this.addLayerwithPoints(response);
-        });
+        }); 
     });
   }
 
