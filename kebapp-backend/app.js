@@ -77,15 +77,15 @@ app.post("/restaurant", (req, res) => {
         let json = JSON.parse(results);
         var locationsArray = [];
 
-        json.features.forEach((doc) => {
-          console.log(doc.place_name);
+        json.features.forEach((feature) => {
+          console.log(feature.place_name);
           locationsArray.push({
             type: "Feature",
             geometry: {
-              type: doc.geometry.type,
+              type: feature.geometry.type,
               coordinates: [
-                doc.geometry.coordinates[0],
-                doc.geometry.coordinates[1],
+                feature.geometry.coordinates[0],
+                feature.geometry.coordinates[1],
               ],
             }
           });
