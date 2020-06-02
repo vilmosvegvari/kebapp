@@ -33,29 +33,54 @@ function connectToDB() {
   );
 }
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "Hello world!",
-  });
-});
-
 app.post("/rate", (req, res) => {
   //req inculedes the location, the price and the rating type: either positive or negative
   //res sends back the new rating for the price
   //update the row in the collection
 });
 
-app.post("/price", (req, res) => {
-  //req includes the location coordinates, the new price
-  //res sends back the saved row
-  //insert a new row to prices
-  //if the row exist, add one positive rating
-});
+app.post("/price", async (req, res) => {
+  //get restname, food and price from req
+  let restaurantName = "Jimmy's Kebab, Torna utca 6., Sopron, Gyor-Moson-Sopron 9400, Hungary";
+  let price = 1050;
+  let food = "kebab"
 
-app.get("/price", (req, res) => {
-  //req includes the coordinates for the place
-  //res sends back prices for the location
-  //query from our mongodb
+  let currentFood = await Price.findOne({
+    price: price,
+    restaurant: restaurantName,
+    food: food
+  });
+
+  if (currentFood != null) {
+    await Price.updateOne(
+      { _id: currentFood._id },
+      { $set: { rating: currentFood.rating + 1 } }
+    );
+
+    currentFood = await Price.findOne({
+      price: price,
+      restaurant: restaurantName,
+      food: food
+    });
+    console.log("Updated food: " + currentFood);
+    res.json(currentFood);
+  } else {
+    currentFood = new Price({
+      price: price,
+      rating: 0,
+      restaurant: restaurantName,
+      food: food
+    });
+
+    currentFood.save((err) => {
+      if (err != null) {
+        console.log(err);
+      } else {
+        console.log(currentFood + " is saved");
+        res.json(currentFood);
+      }
+    });
+  }
 });
 
 app.post("/restaurant", (req, res) => {
@@ -156,7 +181,7 @@ app.post('/restaurant/info', async (req, res) => {
           if (err != null) {
             console.log(err);
           } else {
-            console.log(restaurantName + " is saved.")
+            console.log(restaurant + " is saved.")
           }
         })
 
@@ -168,3 +193,21 @@ app.post('/restaurant/info', async (req, res) => {
     });
   }
 });
+
+/*
+
+░░░░░▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░
+░░░▓▓▓▓▓▓▒▒▒▒▒▒▓▓░░░░░░░
+░░▓▓▓▓▒░░▒▒▓▓▒▒▓▓▓▓░░░░░
+░▓▓▓▓▒░░▓▓▓▒▄▓░▒▄▄▄▓░░░░
+▓▓▓▓▓▒░░▒▀▀▀▀▒░▄░▄▒▓▓░░░
+▓▓▓▓▓▒░░▒▒▒▒▒▓▒▀▒▀▒▓▒▓░░
+▓▓▓▓▓▒▒░░░▒▒▒░░▄▀▀▀▄▓▒▓░
+▓▓▓▓▓▓▒▒░░░▒▒▓▀▄▄▄▄▓▒▒▒▓
+░▓█▀▄▒▓▒▒░░░▒▒░░▀▀▀▒▒▒▒░
+░░▓█▒▒▄▒▒▒▒▒▒▒░░▒▒▒▒▒▒▓░
+░░░▓▓▓▓▒▒▒▒▒▒▒▒░░░▒▒▒▓▓░
+░░░░░▓▓▒░░▒▒▒▒▒▒▒▒▒▒▒▓▓░
+░░░░░░▓▒▒░░░░▒▒▒▒▒▒▒▓▓░░
+
+*/
