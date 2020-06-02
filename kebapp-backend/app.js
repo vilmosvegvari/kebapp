@@ -33,43 +33,63 @@ function connectToDB() {
   );
 }
 
-app.post("/rate", (req, res) => {
-  //req inculedes the location, the price and the rating type: either positive or negative
-  //res sends back the new rating for the price
-  //update the row in the collection
+app.post("/rate", async (req, res) => {
+  //get restaurant, price, food, rating, rating type from req
+  let cRestaurant = "Jimmy's Kebab, Torna utca 6., Sopron, Gyor-Moson-Sopron 9400, Hungary";
+  let cPrice = 1050;
+  let cFood = "kebab"
+  let cRating = 10;
+  let ratingType = "positiv"
+  var rating = 0;
+  if (ratingType == "positive") {
+    rating = 1;
+  } else rating = -1
+
+  let currentFood = await Price.findOneAndUpdate({
+    price: cPrice,
+    restaurant: cRestaurant,
+    food: cFood,
+    rating: cRating
+  }, {
+    rating: cRating + rating
+  }, { new: true });
+
+  console.log("Updated rating: " + currentFood);
+
+  res.json(currentFood);
 });
 
 app.post("/price", async (req, res) => {
   //get restname, food and price from req
-  let restaurantName = "Jimmy's Kebab, Torna utca 6., Sopron, Gyor-Moson-Sopron 9400, Hungary";
-  let price = 1050;
-  let food = "kebab"
+  let cRestaurant = "Jimmy's Kebab, Torna utca 6., Sopron, Gyor-Moson-Sopron 9400, Hungary";
+  let cPrice = 1060;
+  let cFood = "kebab"
 
   let currentFood = await Price.findOne({
-    price: price,
-    restaurant: restaurantName,
-    food: food
+    price: cPrice,
+    restaurant: cRestaurant,
+    food: cFood
   });
 
   if (currentFood != null) {
-    await Price.updateOne(
+    currentFood = await Price.updateOne(
       { _id: currentFood._id },
-      { $set: { rating: currentFood.rating + 1 } }
+      { rating: currentFood.rating + 1 }
     );
 
     currentFood = await Price.findOne({
-      price: price,
-      restaurant: restaurantName,
-      food: food
+      price: cPrice,
+      restaurant: cRestaurant,
+      food: cFood
     });
     console.log("Updated food: " + currentFood);
     res.json(currentFood);
   } else {
     currentFood = new Price({
-      price: price,
+      price: cPrice,
       rating: 0,
-      restaurant: restaurantName,
-      food: food
+      restaurant: cRestaurant,
+      food: cFood
     });
 
     currentFood.save((err) => {
